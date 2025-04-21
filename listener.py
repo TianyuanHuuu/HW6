@@ -17,7 +17,11 @@ def scan_blocks(chain, start_block, end_block, contract_address, eventfile='depo
     w3 = Web3(Web3.HTTPProvider(api_url))
     w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
-    DEPOSIT_ABI = json.loads('[ { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "token", "type": "address" }, { "indexed": true, "internalType": "address", "name": "recipient", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "Deposit", "type": "event" }]')
+    DEPOSIT_ABI = json.loads('[{ "anonymous": false, "inputs": ['
+                             '{"indexed": true, "internalType": "address", "name": "token", "type": "address"},'
+                             '{"indexed": true, "internalType": "address", "name": "recipient", "type": "address"},'
+                             '{"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}'
+                             '], "name": "Deposit", "type": "event"}]')
     contract = w3.eth.contract(address=contract_address, abi=DEPOSIT_ABI)
 
     if start_block == "latest":
@@ -44,12 +48,20 @@ def scan_blocks(chain, start_block, end_block, contract_address, eventfile='depo
             events_data.append(row)
 
     if end_block - start_block < 30:
-        event_filter = contract.events.Deposit.create_filter(fromBlock=start_block, toBlock=end_block)
+        event_filter = contract.events.Deposit.create_filter(
+            from_block=start_block,
+            to_block=end_block,
+            argument_filters={}
+        )
         events = event_filter.get_all_entries()
         process_events(events)
     else:
         for block_num in range(start_block, end_block + 1):
-            event_filter = contract.events.Deposit.create_filter(fromBlock=block_num, toBlock=block_num)
+            event_filter = contract.events.Deposit.create_filter(
+                from_block=block_num,
+                to_block=block_num,
+                argument_filters={}
+            )
             events = event_filter.get_all_entries()
             process_events(events)
 
